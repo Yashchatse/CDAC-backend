@@ -7,7 +7,7 @@ COPY Backend/Parent_Teacher_WEBAPI.sln ./
 COPY Backend/ParentTeacherBridge.API/*.csproj ./ParentTeacherBridge.API/
 
 # Restore dependencies
-RUN dotnet restore ./ParentTeacherBridge.sln
+RUN dotnet restore ./Parent_Teacher_WEBAPI.sln
 
 # Copy the rest of the source code
 COPY Backend/ ./
@@ -27,6 +27,4 @@ COPY --from=build /app/publish .
 ENV ASPNETCORE_URLS=http://+:5000
 
 EXPOSE 5000
-
-ENTRYPOINT ["dotnet", "ParentTeacherBridge.dll"]
-
+ENTRYPOINT ["dotnet", "ParentTeacherBridge.API.dll"]
