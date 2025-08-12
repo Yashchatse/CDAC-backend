@@ -1,4 +1,4 @@
-﻿using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore;
 using ParentTeacherBridge.API.Data;
 using ParentTeacherBridge.API.DTO;
 using ParentTeacherBridge.API.Repositories;
@@ -7,45 +7,45 @@ using System.Text.Json.Serialization;
 
 var builder = WebApplication.CreateBuilder(args);
 
+// AutoMapper
 builder.Services.AddAutoMapper(typeof(MappingProfile));
 
+// Controllers with JSON cycle ignore
 builder.Services.AddControllers()
     .AddJsonOptions(options =>
     {
         options.JsonSerializerOptions.ReferenceHandler = ReferenceHandler.IgnoreCycles;
     });
 
-//builder.Services.AddControllers();
-// ✅ Register your DbContexts before Build()
+// ✅ Database Configuration — Use environment variable if available
 builder.Services.AddDbContext<ParentTeacherBridgeAPIContext>(options =>
 {
+    var connectionString = Environment.GetEnvironmentVariable("CONNECTION_STRING")
+                           ?? builder.Configuration.GetConnectionString("DefaultConnection");
+
     options.UseSqlServer(
-        builder.Configuration.GetConnectionString("DefaultConnection"),
+        connectionString,
         sqlOptions =>
         {
-            // Enable retry on transient failures
-            sqlOptions.EnableRetryOnFailure(
-                maxRetryCount: 5,
-                maxRetryDelay: TimeSpan.FromSeconds(10),
-                errorNumbersToAdd: null);
-
-            // Set command timeout
+            sqlOptions.EnableRetryOnFailure(5, TimeSpan.FromSeconds(10), null);
             sqlOptions.CommandTimeout(30);
         });
 
-    // Enable detailed errors in development
     if (builder.Environment.IsDevelopment())
     {
         options.EnableSensitiveDataLogging();
         options.EnableDetailedErrors();
     }
 });
-// ✅ Add services
+
+// Swagger & API Explorer
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
+// SignalR
 builder.Services.AddSignalR();
 
+// Service and Repository registrations
 builder.Services.AddScoped<IAdminRepository, AdminRepository>();
 builder.Services.AddScoped<IAdminService, AdminService>();
 
@@ -81,7 +81,7 @@ builder.Services.AddScoped<ISubjectService, SubjectService>();
 
 builder.Services.AddScoped<IJwtService, JwtService>();
 
-//  Allow frontend access via CORS
+// CORS
 builder.Services.AddCors(options =>
 {
     options.AddPolicy("AllowFrontend", policy =>
@@ -94,16 +94,20 @@ builder.Services.AddCors(options =>
 
 var app = builder.Build();
 
-// ✅ Setup pipeline
-if (app.Environment.IsDevelopment())
-{
-    app.UseSwagger();
-    app.UseSwaggerUI();
-}
+// Swagger in all environments (optional but helpful on Render)
+app.UseSwagger();
+app.UseSwaggerUI();
 
 app.UseCors("AllowFrontend");
-app.UseHttpsRedirection();
+
+// ❌ Disable HTTPS redirection on Render — Render handles HTTPS externally
+// app.UseHttpsRedirection();
+
 app.UseAuthorization();
 app.MapControllers();
+
+// ✅ Bind to 0.0.0.0 and use PORT from environment (Render sets PORT)
+var port = Environment.GetEnvironmentVariable("PORT") ?? "5000";
+app.Urls.Add($"http://0.0.0.0:{port}");
 
 app.Run();
