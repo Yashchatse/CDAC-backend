@@ -2,28 +2,28 @@
 FROM mcr.microsoft.com/dotnet/sdk:8.0 AS build
 WORKDIR /src
 
-# Copy only solution and project files first for caching restore layers
-COPY *.sln ./
-COPY Backend/*.csproj ./Backend/
+# Copy solution and project files from Backend
+COPY ../Backend/ParentTeacherBridge.sln ./
+COPY ../Backend/ParentTeacherBridge.API/*.csproj ./ParentTeacherBridge.API/
 
 # Restore dependencies
 RUN dotnet restore
 
-# Copy the rest of the source code
-COPY . .
+# Copy the rest of the backend source code
+COPY ../Backend/ ./
 
 # Publish the application
-WORKDIR /src/Backend
+WORKDIR /src/ParentTeacherBridge.API
 RUN dotnet publish -c Release -o /app/publish
 
 # Stage 2: Runtime
 FROM mcr.microsoft.com/dotnet/aspnet:8.0 AS runtime
 WORKDIR /app
 
-# Copy published files from build stage
+# Copy published files
 COPY --from=build /app/publish .
 
-# Set environment variables for ASP.NET Core
+# Set environment variables
 ENV ASPNETCORE_URLS=http://+:5000
 ENV DOTNET_RUNNING_IN_CONTAINER=true
 ENV DOTNET_SYSTEM_GLOBALIZATION_INVARIANT=false
@@ -31,5 +31,5 @@ ENV DOTNET_SYSTEM_GLOBALIZATION_INVARIANT=false
 # Expose port
 EXPOSE 5000
 
-# Run the application
+# Run the app
 ENTRYPOINT ["dotnet", "ParentTeacherBridge.dll"]
