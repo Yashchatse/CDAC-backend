@@ -3,7 +3,7 @@ FROM mcr.microsoft.com/dotnet/sdk:8.0 AS build
 WORKDIR /src
 
 # Copy solution and project files first for restore caching
-COPY Backend/ParentTeacherBridge.sln ./
+COPY Backend/Parent_Teacher_WEBAPI.sln ./
 COPY Backend/ParentTeacherBridge.API/*.csproj ./ParentTeacherBridge.API/
 
 # Restore dependencies
@@ -29,3 +29,4 @@ ENV ASPNETCORE_URLS=http://+:5000
 EXPOSE 5000
 
 ENTRYPOINT ["dotnet", "ParentTeacherBridge.dll"]
+
